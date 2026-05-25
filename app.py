@@ -1,213 +1,164 @@
 """
 KELOMPOK 11: PENGECEKAN KEBOCORAN PIPA (for ... else)
+Versi: Streamlit Web App
 Skenario: Sensor mendeteksi kebocoran di sepanjang jalur pipa
           yang dibagi menjadi 10 segmen.
           0 = Aman | 1 = Bocor
-Pengembangan: Lab Case & Industri Kimia
 """
 
-import time
-import random
+import streamlit as st
 from datetime import datetime
 
+# ─────────────────────────────────────────────────────────────
+# KONFIGURASI HALAMAN
+# ─────────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Pengecekan Kebocoran Pipa",
+    page_icon="🔧",
+    layout="centered"
+)
+
+st.title("🔧 Sistem Pengecekan Kebocoran Pipa")
+st.caption("Kelompok 11 | Metode: `for ... else` | Industri Kimia")
+st.markdown("---")
 
 # ─────────────────────────────────────────────────────────────
-# FUNGSI UTILITAS
+# PILIH SUMBER DATA
 # ─────────────────────────────────────────────────────────────
+st.subheader("📡 Sumber Data Sensor")
 
-def timestamp():
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+sumber = st.radio(
+    "Pilih cara input data segmen:",
+    ["Input Manual", "Acak Otomatis (Simulasi Sensor)", "Contoh: Ada Kebocoran (Segmen 4 & 7)", "Contoh: Semua Aman"],
+    horizontal=False
+)
 
-def cetak_header():
-    print("=" * 60)
-    print("   SISTEM PENGECEKAN KEBOCORAN PIPA - INDUSTRI KIMIA")
-    print("   Kelompok 11 | Metode: for ... else")
-    print(f"   Waktu Pengecekan : {timestamp()}")
-    print("=" * 60)
+data_segmen = []
 
-def cetak_segmen(data_segmen):
-    print("\n  [INFO] Data Sensor Per Segmen:")
-    print("  " + "-" * 40)
-    for i, nilai in enumerate(data_segmen, start=1):
-        status = "🔴 BOCOR" if nilai == 1 else "🟢 Aman "
-        print(f"    Segmen {i:02d}  :  [{nilai}]  →  {status}")
-    print("  " + "-" * 40)
+if sumber == "Input Manual":
+    st.markdown("**Masukkan status tiap segmen (0 = Aman, 1 = Bocor):**")
+    cols = st.columns(5)
+    for i in range(10):
+        with cols[i % 5]:
+            val = st.selectbox(f"Segmen {i+1:02d}", options=[0, 1], key=f"seg_{i}")
+            data_segmen.append(val)
 
-def laporan_akhir(bocor_list):
-    print("\n" + "=" * 60)
-    print("   LAPORAN AKHIR PENGECEKAN")
-    print("=" * 60)
-    if bocor_list:
-        print(f"  ⚠️  Total Kebocoran Ditemukan : {len(bocor_list)} segmen")
-        print(f"  📍 Segmen Bermasalah         : {bocor_list}")
-        print(f"  🔧 Rekomendasi               : Lakukan perbaikan segera")
-        print(f"                                 pada segmen di atas.")
-    else:
-        print("  ✅ Tidak ada kebocoran terdeteksi.")
-        print("  👍 Rekomendasi: Jalur pipa dalam kondisi prima.")
-    print("=" * 60)
+elif sumber == "Acak Otomatis (Simulasi Sensor)":
+    import random
+    if st.button("🔄 Generate Data Sensor"):
+        data_segmen = [random.choices([0, 1], weights=[80, 20])[0] for _ in range(10)]
+        st.session_state["data_acak"] = data_segmen
+    data_segmen = st.session_state.get("data_acak", [0]*10)
 
+elif sumber == "Contoh: Ada Kebocoran (Segmen 4 & 7)":
+    data_segmen = [0, 0, 0, 1, 0, 0, 1, 0, 0, 0]
+
+elif sumber == "Contoh: Semua Aman":
+    data_segmen = [0] * 10
 
 # ─────────────────────────────────────────────────────────────
-# FUNGSI UTAMA: PENGECEKAN DENGAN for ... else
+# TAMPILKAN DATA SEGMEN
 # ─────────────────────────────────────────────────────────────
+if data_segmen:
+    st.markdown("---")
+    st.subheader("📊 Status Sensor Per Segmen")
 
-def cek_kebocoran_pertama(data_segmen):
-    """
-    Sesuai soal: cari kebocoran PERTAMA saja, lalu break.
-    Gunakan else untuk mencetak 'Seluruh jalur pipa aman'.
-    """
-    print("\n  [MODE] Deteksi Kebocoran Pertama (for ... else)")
-    print("  " + "-" * 40)
+    cols = st.columns(10)
+    for i, val in enumerate(data_segmen):
+        with cols[i]:
+            if val == 1:
+                st.error(f"**{i+1}**\n\n🔴")
+                st.caption("Bocor")
+            else:
+                st.success(f"**{i+1}**\n\n🟢")
+                st.caption("Aman")
 
-    for i, nilai in enumerate(data_segmen, start=1):
-        print(f"    Memeriksa Segmen {i:02d}...", end=" ")
-        time.sleep(0.3)  # simulasi waktu baca sensor
-        if nilai == 1:
-            print(f"⚠️  BOCOR!")
-            print(f"\n  ❌ KEBOCORAN DI SEGMEN {i}!")
-            print(f"     → Pengecekan dihentikan, segmen bocor ditemukan.")
-            break
+    st.markdown(f"**Data mentah:** `{data_segmen}`")
+
+# ─────────────────────────────────────────────────────────────
+# PILIH MODE PENGECEKAN
+# ─────────────────────────────────────────────────────────────
+st.markdown("---")
+st.subheader("⚙️ Mode Pengecekan")
+
+mode = st.radio(
+    "Pilih mode:",
+    ["Deteksi Kebocoran Pertama (for-else)", "Scan Lengkap Semua Segmen", "Keduanya"],
+    horizontal=False
+)
+
+# ─────────────────────────────────────────────────────────────
+# TOMBOL CEK
+# ─────────────────────────────────────────────────────────────
+st.markdown("---")
+if st.button("🚀 Mulai Pengecekan", use_container_width=True, type="primary"):
+
+    waktu = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    st.markdown(f"🕐 **Waktu Pengecekan:** `{waktu}`")
+    st.markdown("---")
+
+    # ── MODE 1: for ... else (kebocoran pertama) ──────────────
+    def cek_pertama(data):
+        st.markdown("### 🔍 Mode: Deteksi Kebocoran Pertama (`for ... else`)")
+        log = []
+        bocor_ditemukan = False
+
+        for i, nilai in enumerate(data, start=1):
+            if nilai == 1:
+                log.append(f"🔴 Segmen {i:02d} → **BOCOR**")
+                st.warning(f"❌ **KEBOCORAN DITEMUKAN DI SEGMEN {i}!**")
+                st.info("ℹ️ Pengecekan dihentikan pada segmen pertama yang bocor (break).")
+                bocor_ditemukan = True
+                break
+            else:
+                log.append(f"🟢 Segmen {i:02d} → Aman")
+
         else:
-            print("✅ Aman")
-    else:
-        # Blok else hanya jalan jika for selesai TANPA break
-        print("\n  ✅ SELURUH JALUR PIPA AMAN!")
-        print("     → Tidak ada kebocoran pada semua segmen.")
+            # else hanya jalan jika for selesai tanpa break
+            st.success("✅ **SELURUH JALUR PIPA AMAN!**")
+            st.info("ℹ️ Blok `else` dieksekusi karena tidak ada `break` terjadi.")
 
+        with st.expander("📋 Log Pemeriksaan Segmen"):
+            for baris in log:
+                st.markdown(baris)
 
-def cek_kebocoran_lengkap(data_segmen):
-    """
-    Pengembangan industri: scan SEMUA segmen, catat semua yang bocor.
-    """
-    print("\n  [MODE] Scan Lengkap Semua Segmen (Industri Kimia)")
-    print("  " + "-" * 40)
+    # ── MODE 2: Scan Lengkap ──────────────────────────────────
+    def cek_lengkap(data):
+        st.markdown("### 🏭 Mode: Scan Lengkap Semua Segmen (Industri Kimia)")
+        bocor_list = []
+        log = []
 
-    bocor_list = []
+        for i, nilai in enumerate(data, start=1):
+            if nilai == 1:
+                bocor_list.append(i)
+                log.append(f"🔴 Segmen {i:02d} → **BOCOR**")
+            else:
+                log.append(f"🟢 Segmen {i:02d} → Aman")
 
-    for i, nilai in enumerate(data_segmen, start=1):
-        print(f"    Memeriksa Segmen {i:02d}...", end=" ")
-        time.sleep(0.2)
-        if nilai == 1:
-            print(f"⚠️  BOCOR!")
-            bocor_list.append(i)
+        with st.expander("📋 Log Pemeriksaan Semua Segmen", expanded=True):
+            for baris in log:
+                st.markdown(baris)
+
+        st.markdown("#### 📄 Laporan Akhir")
+        if bocor_list:
+            st.error(f"⚠️ **{len(bocor_list)} kebocoran ditemukan** di segmen: {bocor_list}")
+            st.warning("🔧 **Rekomendasi:** Lakukan perbaikan segera pada segmen bermasalah.")
         else:
-            print("✅ Aman")
+            st.success("✅ **Seluruh jalur pipa aman. Tidak ada kebocoran.**")
+            st.info("👍 **Rekomendasi:** Jalur pipa dalam kondisi prima.")
 
-    laporan_akhir(bocor_list)
-    return bocor_list
-
-
-# ─────────────────────────────────────────────────────────────
-# INPUT DATA SEGMEN
-# ─────────────────────────────────────────────────────────────
-
-def input_manual():
-    print("\n  Masukkan status 10 segmen (0=Aman, 1=Bocor):")
-    data = []
-    for i in range(1, 11):
-        while True:
-            try:
-                val = int(input(f"    Segmen {i:02d}: "))
-                if val in (0, 1):
-                    data.append(val)
-                    break
-                else:
-                    print("    ⚠️  Masukkan 0 atau 1 saja!")
-            except ValueError:
-                print("    ⚠️  Input tidak valid!")
-    return data
-
-def input_otomatis():
-    # Simulasi sensor acak: peluang bocor ~20%
-    data = [random.choices([0, 1], weights=[80, 20])[0] for _ in range(10)]
-    print(f"\n  [SENSOR OTOMATIS] Data dihasilkan: {data}")
-    return data
-
-def input_contoh_bocor():
-    # Contoh hardcoded: segmen 4 dan 7 bocor
-    data = [0, 0, 0, 1, 0, 0, 1, 0, 0, 0]
-    print(f"\n  [CONTOH TETAP] Data: {data}")
-    return data
-
-def input_contoh_aman():
-    # Semua aman
-    data = [0] * 10
-    print(f"\n  [CONTOH AMAN] Data: {data}")
-    return data
-
+    # ── JALANKAN SESUAI MODE ──────────────────────────────────
+    if mode == "Deteksi Kebocoran Pertama (for-else)":
+        cek_pertama(data_segmen)
+    elif mode == "Scan Lengkap Semua Segmen":
+        cek_lengkap(data_segmen)
+    elif mode == "Keduanya":
+        cek_pertama(data_segmen)
+        st.markdown("---")
+        cek_lengkap(data_segmen)
 
 # ─────────────────────────────────────────────────────────────
-# MENU UTAMA
+# FOOTER
 # ─────────────────────────────────────────────────────────────
-
-def menu():
-    print("\n┌─────────────────────────────────────────┐")
-    print("│           PILIH SUMBER DATA SENSOR      │")
-    print("├─────────────────────────────────────────┤")
-    print("│  1. Input manual (10 segmen)            │")
-    print("│  2. Sensor otomatis (acak)              │")
-    print("│  3. Contoh: ada kebocoran (segmen 4 & 7)│")
-    print("│  4. Contoh: semua segmen aman           │")
-    print("│  5. Keluar                              │")
-    print("└─────────────────────────────────────────┘")
-    return input("  Pilih [1-5]: ").strip()
-
-def menu_mode():
-    print("\n┌─────────────────────────────────────────┐")
-    print("│           PILIH MODE PENGECEKAN         │")
-    print("├─────────────────────────────────────────┤")
-    print("│  1. Deteksi kebocoran pertama (for-else)│")
-    print("│  2. Scan lengkap semua segmen           │")
-    print("│  3. Keduanya                            │")
-    print("└─────────────────────────────────────────┘")
-    return input("  Pilih [1-3]: ").strip()
-
-
-# ─────────────────────────────────────────────────────────────
-# PROGRAM UTAMA
-# ─────────────────────────────────────────────────────────────
-
-def main():
-    cetak_header()
-
-    # Pilih sumber data
-    pilihan_data = menu()
-    if pilihan_data == "1":
-        data_segmen = input_manual()
-    elif pilihan_data == "2":
-        data_segmen = input_otomatis()
-    elif pilihan_data == "3":
-        data_segmen = input_contoh_bocor()
-    elif pilihan_data == "4":
-        data_segmen = input_contoh_aman()
-    elif pilihan_data == "5":
-        print("\n👋 Keluar dari sistem.")
-        return
-    else:
-        print("⚠️  Pilihan tidak valid. Menggunakan sensor otomatis.")
-        data_segmen = input_otomatis()
-
-    # Tampilkan data segmen
-    cetak_segmen(data_segmen)
-
-    # Pilih mode pengecekan
-    mode = menu_mode()
-    print()
-
-    if mode == "1":
-        cek_kebocoran_pertama(data_segmen)
-    elif mode == "2":
-        cek_kebocoran_lengkap(data_segmen)
-    elif mode == "3":
-        cek_kebocoran_pertama(data_segmen)
-        cek_kebocoran_lengkap(data_segmen)
-    else:
-        print("⚠️  Mode tidak valid. Menjalankan mode pertama.")
-        cek_kebocoran_pertama(data_segmen)
-
-    print(f"\n  [Selesai] Waktu: {timestamp()}\n")
-
-
-if __name__ == "__main__":
-    main()
+st.markdown("---")
+st.caption("Kelompok 11 · Pengecekan Kebocoran Pipa · Python `for...else` · Industri Kimia")
