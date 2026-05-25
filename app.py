@@ -1,13 +1,12 @@
 """
 KELOMPOK 11: PENGECEKAN KEBOCORAN PIPA (for ... else)
-Versi: Streamlit Web App
-Skenario: Sensor mendeteksi kebocoran di sepanjang jalur pipa
-          yang dibagi menjadi 10 segmen.
-          0 = Aman | 1 = Bocor
+Versi: Streamlit Web App + Musik
 """
 
 import streamlit as st
 from datetime import datetime
+import base64
+import os
 
 # ─────────────────────────────────────────────────────────────
 # KONFIGURASI HALAMAN
@@ -20,6 +19,39 @@ st.set_page_config(
 
 st.title("🔧 Sistem Pengecekan Kebocoran Pipa")
 st.caption("Kelompok 11 | Metode: `for ... else` | Industri Kimia")
+st.markdown("---")
+
+# ─────────────────────────────────────────────────────────────
+# BAGIAN MUSIK / AUDIO
+# ─────────────────────────────────────────────────────────────
+st.subheader("🎵 Musik Latar")
+
+tab_musik1, tab_musik2 = st.tabs(["🎧 Upload Musik Sendiri", "🔗 Musik dari URL"])
+
+with tab_musik1:
+    st.info("Upload file audio (.mp3 / .wav / .ogg) dari komputer kamu.")
+    file_audio = st.file_uploader("Pilih file musik:", type=["mp3", "wav", "ogg"])
+    autoplay_upload = st.checkbox("▶️ Putar otomatis saat halaman dibuka", key="auto_upload")
+
+    if file_audio is not None:
+        st.audio(file_audio, format=f"audio/{file_audio.name.split('.')[-1]}", autoplay=autoplay_upload)
+        st.success(f"🎶 Memutar: `{file_audio.name}`")
+
+with tab_musik2:
+    st.info("Tempelkan URL langsung ke file audio (.mp3/.wav/.ogg) yang dapat diakses publik.")
+    url_audio = st.text_input(
+        "URL audio:",
+        placeholder="https://example.com/musik.mp3"
+    )
+    autoplay_url = st.checkbox("▶️ Putar otomatis", key="auto_url")
+
+    if url_audio:
+        try:
+            st.audio(url_audio, autoplay=autoplay_url)
+            st.success("🎶 Audio berhasil dimuat dari URL.")
+        except Exception as e:
+            st.error(f"Gagal memuat audio: {e}")
+
 st.markdown("---")
 
 # ─────────────────────────────────────────────────────────────
@@ -88,6 +120,29 @@ mode = st.radio(
 )
 
 # ─────────────────────────────────────────────────────────────
+# MUSIK NOTIFIKASI (HTML audio inline)
+# ─────────────────────────────────────────────────────────────
+def putar_notif_bocor():
+    """Putar suara notifikasi peringatan via HTML (tidak perlu file eksternal)."""
+    suara_html = """
+    <audio autoplay>
+      <source src="https://www.soundjay.com/buttons/sounds/beep-07.mp3" type="audio/mpeg">
+    </audio>
+    """
+    st.components.v1.html(suara_html, height=0)
+
+def putar_notif_aman():
+    """Putar suara notifikasi aman."""
+    suara_html = """
+    <audio autoplay>
+      <source src="https://www.soundjay.com/buttons/sounds/beep-21.mp3" type="audio/mpeg">
+    </audio>
+    """
+    st.components.v1.html(suara_html, height=0)
+
+aktifkan_notif = st.checkbox("🔔 Aktifkan suara notifikasi hasil pengecekan", value=True)
+
+# ─────────────────────────────────────────────────────────────
 # TOMBOL CEK
 # ─────────────────────────────────────────────────────────────
 st.markdown("---")
@@ -97,7 +152,7 @@ if st.button("🚀 Mulai Pengecekan", use_container_width=True, type="primary"):
     st.markdown(f"🕐 **Waktu Pengecekan:** `{waktu}`")
     st.markdown("---")
 
-    # ── MODE 1: for ... else (kebocoran pertama) ──────────────
+    # ── MODE 1: for ... else ──────────────────────────────────
     def cek_pertama(data):
         st.markdown("### 🔍 Mode: Deteksi Kebocoran Pertama (`for ... else`)")
         log = []
@@ -107,16 +162,18 @@ if st.button("🚀 Mulai Pengecekan", use_container_width=True, type="primary"):
             if nilai == 1:
                 log.append(f"🔴 Segmen {i:02d} → **BOCOR**")
                 st.warning(f"❌ **KEBOCORAN DITEMUKAN DI SEGMEN {i}!**")
-                st.info("ℹ️ Pengecekan dihentikan pada segmen pertama yang bocor (break).")
+                st.info("ℹ️ Pengecekan dihentikan pada segmen pertama yang bocor (`break`).")
                 bocor_ditemukan = True
+                if aktifkan_notif:
+                    putar_notif_bocor()
                 break
             else:
                 log.append(f"🟢 Segmen {i:02d} → Aman")
-
         else:
-            # else hanya jalan jika for selesai tanpa break
             st.success("✅ **SELURUH JALUR PIPA AMAN!**")
             st.info("ℹ️ Blok `else` dieksekusi karena tidak ada `break` terjadi.")
+            if aktifkan_notif:
+                putar_notif_aman()
 
         with st.expander("📋 Log Pemeriksaan Segmen"):
             for baris in log:
@@ -143,9 +200,13 @@ if st.button("🚀 Mulai Pengecekan", use_container_width=True, type="primary"):
         if bocor_list:
             st.error(f"⚠️ **{len(bocor_list)} kebocoran ditemukan** di segmen: {bocor_list}")
             st.warning("🔧 **Rekomendasi:** Lakukan perbaikan segera pada segmen bermasalah.")
+            if aktifkan_notif:
+                putar_notif_bocor()
         else:
             st.success("✅ **Seluruh jalur pipa aman. Tidak ada kebocoran.**")
             st.info("👍 **Rekomendasi:** Jalur pipa dalam kondisi prima.")
+            if aktifkan_notif:
+                putar_notif_aman()
 
     # ── JALANKAN SESUAI MODE ──────────────────────────────────
     if mode == "Deteksi Kebocoran Pertama (for-else)":
@@ -162,3 +223,4 @@ if st.button("🚀 Mulai Pengecekan", use_container_width=True, type="primary"):
 # ─────────────────────────────────────────────────────────────
 st.markdown("---")
 st.caption("Kelompok 11 · Pengecekan Kebocoran Pipa · Python `for...else` · Industri Kimia")
+
